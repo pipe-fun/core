@@ -1,0 +1,28 @@
+[package]
+name = "pipe-core"
+version = "0.1.0"
+authors = ["Spxg <itsme@spxg.me>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+serde_json = "1.0"
+serde = "1.0"
+serde_derive = "1.0"
+
+[dependencies.futures]
+version = "0.3"
+features = ["thread-pool"]
+
+[dependencies.async-std]
+version = "1"
+features = ["attributes"]
+
+[dependencies.reqwest]
+version = "0.10"
+features = ["json", "blocking"]
+
+[dependencies.chrono]
+version = "0.4"
+features = ["serde"]
