@@ -26,6 +26,15 @@ impl PipeTasks {
         }
     }
 
+    pub fn refresh(&mut self) {
+        let tasks = OriginalTask::get_all_task_by_token(&self.device_token);
+        self.tasks = tasks;
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.tasks.is_empty()
+    }
+
     pub async fn get_all_future(&mut self) -> Vec<impl Future<Output = ()>> {
         let mut tasks = Vec::new();
         let mut new_deque = VecDeque::new();
@@ -46,7 +55,9 @@ impl PipeTasks {
                 println!("task has been registered, id: {}, command: {}, token: {}, owner: {}, execute_time: {}"
                          , id, command, token, owner, execute_time.time());
                 async_std::task::sleep(delay).await;
-                socket.write(command.as_bytes()).await.unwrap();
+                if let Err(e) = socket.write(command.as_bytes()).await {
+                    println!("{}", e.to_string());
+                }
                 println!("task {} has been executed", id);
             };
 

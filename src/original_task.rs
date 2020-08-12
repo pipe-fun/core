@@ -24,6 +24,18 @@ impl Clone for OriginalTask {
 }
 
 impl OriginalTask {
+    pub fn get_all_task_by_token(token: &str) -> VecDeque<PipeTask> {
+        let vec = match reqwest::blocking::get("http://localhost:1122/api/task/read") {
+            Ok(response) => response.json::<Vec<OriginalTask>>().unwrap(),
+            Err(_) => { Vec::new() }
+        };
+
+        vec.iter()
+            .filter(|v| v.device_token.eq(&token.to_string()))
+            .map(|v| v.clone().to_pipe_task())
+            .collect()
+    }
+
     pub fn active(&self) -> bool {
         self.active
     }
@@ -38,16 +50,6 @@ impl OriginalTask {
 
     pub fn execute_time(&self) -> NaiveTime {
         self.execute_time
-    }
-
-    pub fn get_all_task_by_token(token: &str) -> VecDeque<PipeTask> {
-        let vec = reqwest::blocking::get("http://localhost:1122/api/task/read").unwrap();
-        let vec = vec.json::<Vec<OriginalTask>>().unwrap();
-
-        vec.iter()
-            .filter(|v| v.device_token.eq(&token.to_string()))
-            .map(|v| v.clone().to_pipe_task())
-            .collect()
     }
 
     pub fn to_pipe_task(self) -> PipeTask {
