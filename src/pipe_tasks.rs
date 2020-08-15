@@ -26,7 +26,7 @@ impl PipeTasks {
         }
     }
 
-    pub fn refresh(&mut self) {
+    pub fn _refresh(&mut self) {
         let tasks = OriginalTask::get_all_task_by_token(&self.device_token);
         self.tasks = tasks;
     }
@@ -52,12 +52,10 @@ impl PipeTasks {
             let mut socket = self.socket.clone();
 
             let f = async move {
-                println!("task has been registered, id: {}, command: {}, token: {}, owner: {}, execute_time: {}"
-                         , id, command, token, owner, execute_time.time());
+                println!("task has been registered, id: {}, command: {}, execute_time: {}"
+                         , id, command, execute_time.time());
                 async_std::task::sleep(delay).await;
-                if let Err(e) = socket.write(command.as_bytes()).await {
-                    println!("{}", e.to_string());
-                }
+                socket.write(command.as_bytes()).await.unwrap();
                 println!("task {} has been executed", id);
             };
 
