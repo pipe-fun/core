@@ -6,6 +6,7 @@ use crate::device::Device;
 use crate::pipe_task::PipeTask;
 use crate::original_task::OriginalTask;
 
+#[allow(dead_code)]
 pub struct PipeTasks {
     owner: String,
     device_token: String,
@@ -42,8 +43,6 @@ impl PipeTasks {
         while let Some(t) = self.pop() {
             if !t.active() { new_deque.push_back(t); continue; }
 
-            let owner = self.owner.clone();
-            let token = self.device_token.clone();
             let execute_time = t.execute_time();
             let delay = execute_time.duration();
             let id = t.id();

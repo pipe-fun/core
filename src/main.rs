@@ -64,7 +64,7 @@ async fn test() -> std::io::Result<()> {
             }
         });
 
-        tx.send((token.into(), socket, handle))?;
+        tx.send((token.into(), socket, handle)).unwrap();
     }
 
     Ok(())
