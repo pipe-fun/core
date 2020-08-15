@@ -51,7 +51,7 @@ impl PipeTasks {
             let mut socket = self.socket.clone();
 
             let f = async move {
-                println!("task has been registered, id: {}, command: {}, execute_time: {}"
+                println!("id: {}, command: {}, execute_time: {}"
                          , id, command, execute_time.time());
                 async_std::task::sleep(delay).await;
                 socket.write(command.as_bytes()).await.unwrap();
