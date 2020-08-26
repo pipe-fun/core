@@ -45,17 +45,17 @@ impl PipeTasks {
 
             let execute_time = t.execute_time();
             let delay = execute_time.duration();
-            let id = t.id();
+            let name = t.name();
             let command = t.command();
 
             let mut socket = self.socket.clone();
 
             let f = async move {
-                println!("id: {}, command: {}, execute_time: {}"
-                         , id, command, execute_time.time());
+                println!("task_name: {}, command: {}, execute_time: {}"
+                         , name, command, execute_time.time());
                 async_std::task::sleep(delay).await;
                 socket.write(command.as_bytes()).await.unwrap();
-                println!("task {} has been executed", id);
+                println!("task {} has been executed", name);
             };
 
             new_deque.push_back(t);

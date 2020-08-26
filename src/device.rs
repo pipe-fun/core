@@ -1,7 +1,8 @@
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Device {
-    owner: String,
     token: String,
+    name: String,
+    owner: String
 }
 
 impl Device {

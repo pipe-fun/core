@@ -34,7 +34,7 @@ async fn test() -> std::io::Result<()> {
                 socket.read(&mut buf).await.unwrap();
                 handle.cancel().await;
                 list.lock().unwrap().remove(&token);
-                println!("destroy task");
+                println!("cancel task");
             };
 
             async_std::task::spawn(async move { f.await; });

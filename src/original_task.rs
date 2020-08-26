@@ -1,10 +1,14 @@
-use chrono::NaiveTime;
+use chrono::{NaiveTime, NaiveDateTime};
 use std::collections::VecDeque;
 use crate::pipe_task::PipeTask;
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct OriginalTask {
     id: i32,
+    name: String,
+    succeed_count: i32,
+    failed_count: i32,
+    last_executed: NaiveDateTime,
     command: String,
     execute_time: NaiveTime,
     device_token: String,
@@ -15,10 +19,14 @@ impl Clone for OriginalTask {
     fn clone(&self) -> Self {
         Self {
             id: self.id,
+            name: self.name.clone(),
+            succeed_count: 0,
+            failed_count: 0,
+            last_executed: self.last_executed,
             command: self.command.clone(),
             execute_time: self.execute_time,
             device_token: self.device_token.clone(),
-            active: self.active
+            active: self.active,
         }
     }
 }
@@ -34,6 +42,10 @@ impl OriginalTask {
             .filter(|v| v.device_token.eq(&token.to_string()))
             .map(|v| v.clone().to_pipe_task())
             .collect()
+    }
+
+    pub fn name(&self) -> String {
+        self.name.clone()
     }
 
     pub fn active(&self) -> bool {
