@@ -5,42 +5,70 @@ mod original_task;
 mod pipe_task;
 mod pipe_tasks;
 mod device;
+mod handler;
 
 #[macro_use]
 extern crate serde_derive;
 
 use futures::executor::block_on;
-use std::collections::HashSet;
-use async_std::net::{TcpListener, TcpStream};
+use async_std::net::TcpListener;
 use futures::{StreamExt, AsyncReadExt};
-use async_std::task::JoinHandle;
-use std::sync::{mpsc, Mutex};
-use async_std::sync::Arc;
+use std::sync::mpsc;
+use web2core::protoc::Operation;
 use crate::pipe_tasks::PipeTasks;
+use crate::handler::Handler;
 
 async fn test() -> std::io::Result<()> {
-    let mut buf = [0; 1024];
-    let list = Arc::new(Mutex::new(HashSet::new()));
+    let key = "key";
+    let mut handler = Handler::new();
     let listener = TcpListener::bind("127.0.0.1:1234").await?;
-    let (tx, rx) = mpsc::channel::<(String, TcpStream, JoinHandle<()>)>();
+    let web_listener = TcpListener::bind("127.0.0.1:4321").await?;
+    let (tx, rx) = mpsc::channel::<String>();
 
-    let _list = list.clone();
+    let mut handler2web = handler.clone();
     async_std::task::spawn(async move {
-        while let Ok((token, mut socket, handle)) = rx.recv() {
-            let list = _list.clone();
+        let mut buf = [0; 1024];
+        while let Some(stream) = web_listener.incoming().next().await {
+            let mut socket = stream.unwrap();
+            let len = socket.read(&mut buf).await.unwrap();
+            match core::str::from_utf8(&buf[..len]) {
+                Ok(t) => if !t.eq(key) { continue; },
+                Err(_) => continue,
+            };
+
+            loop {
+                let len = socket.read(&mut buf).await.unwrap();
+                let value = match core::str::from_utf8(&buf[..len]) {
+                    Ok(t) => t,
+                    Err(_) => continue,
+                };
+                let op = match serde_json::from_str::<Operation>(value) {
+                    Ok(o) => o,
+                    Err(_) => continue,
+                };
+                match op {
+                    Operation::Execute(info) => handler2web.execute(info).await,
+                    _ => ()
+                }
+            }
+        }
+    });
+
+    let _handler = handler.clone();
+    async_std::task::spawn(async move {
+        while let Ok(token) = rx.recv() {
+            let mut handler = _handler.clone();
 
             let f = async move {
-                let mut buf = [];
-                socket.read(&mut buf).await.unwrap();
-                handle.cancel().await;
-                list.lock().unwrap().remove(&token);
-                println!("cancel task");
+                handler.cancel_guard(&token).await;
+                println!("task cancel");
             };
 
             async_std::task::spawn(async move { f.await; });
         }
     });
 
+    let mut buf = [0; 1024];
     while let Some(stream) = listener.incoming().next().await {
         let mut socket = stream?;
         let len = socket.read(&mut buf).await?;
@@ -51,11 +79,10 @@ async fn test() -> std::io::Result<()> {
             Ok(t) => t,
             Err(_) => continue,
         };
-        if list.lock().unwrap().contains(token) { continue; }
+        if handler.contains(token) { continue; }
 
         let mut tasks = PipeTasks::new(token, _socket);
         if tasks.is_empty() { continue; }
-        list.lock().unwrap().insert(token.to_string());
 
         let handle = async_std::task::spawn(async move {
             loop {
@@ -64,7 +91,8 @@ async fn test() -> std::io::Result<()> {
             }
         });
 
-        tx.send((token.into(), socket, handle)).unwrap();
+        handler.insert(token.into(), socket.clone(), handle);
+        tx.send(token.into()).unwrap();
     }
 
     Ok(())

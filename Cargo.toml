@@ -26,3 +26,7 @@ features = ["json", "blocking"]
 [dependencies.chrono]
 version = "0.4"
 features = ["serde"]
+
+[dependencies.web2core]
+version = "0.1"
+path = "../web2core"
