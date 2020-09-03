@@ -47,6 +47,7 @@ impl PipeTasks {
             let delay = execute_time.duration();
             let name = t.name();
             let command = t.command();
+            let ot = t.original_task();
 
             let mut socket = self.socket.clone();
 
@@ -55,6 +56,7 @@ impl PipeTasks {
                          , name, command, execute_time.time());
                 async_std::task::sleep(delay).await;
                 socket.write(command.as_bytes()).await.unwrap();
+                OriginalTask::update_success(ot);
                 println!("task {} has been executed", name);
             };
 

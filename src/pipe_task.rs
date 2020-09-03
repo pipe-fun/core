@@ -3,6 +3,7 @@ use crate::original_task::OriginalTask;
 
 #[derive(Debug)]
 pub struct PipeTask {
+    ot: OriginalTask,
     id: i32,
     name: String,
     active: bool,
@@ -13,6 +14,7 @@ pub struct PipeTask {
 impl PipeTask {
     pub fn from(ot: OriginalTask) -> Self {
         PipeTask {
+            ot: ot.clone(),
             id: ot.id(),
             name: ot.name(),
             active: ot.active(),
@@ -35,5 +37,9 @@ impl PipeTask {
 
     pub fn execute_time(&self) -> ExecuteTime {
         self.execute_time
+    }
+
+    pub fn original_task(&self) -> OriginalTask {
+        self.ot.clone()
     }
 }

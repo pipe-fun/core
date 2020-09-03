@@ -1,4 +1,4 @@
-use chrono::{NaiveTime, NaiveDateTime};
+use chrono::{NaiveTime, NaiveDateTime, Local};
 use std::collections::VecDeque;
 use crate::pipe_task::PipeTask;
 
@@ -9,6 +9,7 @@ pub struct OriginalTask {
     succeed_count: i32,
     failed_count: i32,
     last_executed: NaiveDateTime,
+    owner: String,
     command: String,
     execute_time: NaiveTime,
     device_token: String,
@@ -20,9 +21,10 @@ impl Clone for OriginalTask {
         Self {
             id: self.id,
             name: self.name.clone(),
-            succeed_count: 0,
-            failed_count: 0,
+            succeed_count: self.succeed_count,
+            failed_count: self.failed_count,
             last_executed: self.last_executed,
+            owner: self.owner.clone(),
             command: self.command.clone(),
             execute_time: self.execute_time,
             device_token: self.device_token.clone(),
@@ -66,5 +68,17 @@ impl OriginalTask {
 
     pub fn to_pipe_task(self) -> PipeTask {
         PipeTask::from(self)
+    }
+
+    pub fn update_success(mut ot: OriginalTask) {
+        ot.succeed_count += 1;
+        ot.last_executed = Local::now().naive_local();
+        let client = reqwest::blocking::Client::new();
+        let body = serde_json::to_string(&ot).unwrap();
+        match client.put(&format!("http://localhost:1122/api/task/update/{}", ot.id))
+            .body(body).send() {
+            Ok(_) => (),
+            Err(_) => ()
+        };
     }
 }
