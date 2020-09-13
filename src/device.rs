@@ -1,3 +1,5 @@
+use crate::request;
+
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Device {
     token: String,
@@ -7,10 +9,8 @@ pub struct Device {
 
 impl Device {
     pub fn get_owner_by_token(token: &str) -> String {
-        let vec = match reqwest::blocking::get("http://localhost:1122/api/device/read") {
-            Ok(response) => response.json::<Vec<Device>>().unwrap(),
-            Err(_) => { Vec::new() }
-        };
+        let url = "/device/read";
+        let vec: Vec<Device> = request::get(url);
 
         let mut owner = String::new();
         for d in vec {

@@ -7,6 +7,7 @@ mod pipe_tasks;
 mod device;
 mod task_handler;
 mod web_handler;
+mod request;
 
 #[macro_use]
 extern crate serde_derive;
