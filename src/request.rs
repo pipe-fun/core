@@ -8,8 +8,8 @@ pub fn get<T: DeserializeOwned>(url: &str) -> Vec<T> {
     let url = format!("{}{}", API_ROOT, url);
     match reqwest::blocking::get(&url) {
         Ok(response) => {
-            match response.json::<T>() {
-                Ok(data) => vec![data],
+            match response.json::<Vec<T>>() {
+                Ok(data) => data,
                 Err(_) => vec![]
             }
         }
