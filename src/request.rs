@@ -18,8 +18,9 @@ pub fn get<T: DeserializeOwned>(url: &str) -> Vec<T> {
 }
 
 pub fn put<T: Serialize>(url: &str, data: &T) {
+    let url = format!("{}{}", API_ROOT, url);
     let client = reqwest::blocking::ClientBuilder::new().build().unwrap();
-    match client.put(url).json(data).send() {
+    match client.put(&url).json(data).send() {
         Ok(_) => (),
         Err(_) => ()
     }
