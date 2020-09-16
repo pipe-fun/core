@@ -2,9 +2,13 @@ use async_std::sync::Arc;
 use std::sync::Mutex;
 use std::collections::HashMap;
 use async_std::task::JoinHandle;
-use async_std::net::{TcpStream, ToSocketAddrs, TcpListener};
-use futures::{AsyncWriteExt, AsyncReadExt, StreamExt};
+
+use futures::{AsyncWriteExt, AsyncReadExt};
 use web2core::protoc::{ExecuteInfo, OpResult};
+use std::net::{TcpListener, ToSocketAddrs};
+use async_std::net::TcpStream;
+use net2::TcpStreamExt;
+use std::time::Duration;
 use crate::pipe_tasks::PipeTasks;
 
 pub struct TaskHandler {
@@ -19,11 +23,14 @@ impl TaskHandler {
     }
 
     pub async fn start<A: ToSocketAddrs>(&mut self, addrs: A) -> std::io::Result<()> {
-        let listener = TcpListener::bind(addrs).await?;
+        let listener = TcpListener::bind(addrs)?;
         let mut buf = [0; 1024];
 
-        while let Some(stream) = listener.incoming().next().await {
-            let mut socket = stream?;
+        while let Some(stream) = listener.incoming().next() {
+            let socket = stream?;
+            socket.set_keepalive(Some(Duration::from_secs(1))).unwrap();
+
+            let mut socket: async_std::net::TcpStream = socket.into();
             let len = socket.read(&mut buf).await?;
             if len == 0 { continue; }
 
