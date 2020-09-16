@@ -8,7 +8,7 @@ use web2core::protoc::{ExecuteInfo, OpResult};
 use crate::pipe_tasks::PipeTasks;
 
 pub struct TaskHandler {
-    pub inner: Arc<Mutex<HashMap<String, (TcpStream, JoinHandle<()>, JoinHandle<()>)>>>,
+    pub inner: Arc<Mutex<HashMap<String, (TcpStream, JoinHandle<()>)>>>,
 }
 
 impl TaskHandler {
@@ -45,36 +45,29 @@ impl TaskHandler {
     pub fn insert(&mut self, token: &str,
                   socket: TcpStream,
                   handle_task: JoinHandle<()>,
-                  task_guard: JoinHandle<()>,
     ) {
-        self.inner.lock().unwrap().insert(token.into(), (socket, handle_task, task_guard));
+        self.inner.lock().unwrap().insert(token.into(), (socket, handle_task));
     }
 
     pub fn get_socket(&mut self, token: &str) -> Option<TcpStream> {
         let handler = self.inner.lock().unwrap().remove(token);
         match handler {
             None => None,
-            Some((s, h, t)) => {
+            Some((s, h)) => {
                 let socket = s.clone();
-                self.insert(token, s, h, t);
+                self.insert(token, s, h);
                 Some(socket)
             }
         }
-    }
-
-    pub async fn cancel(&mut self, token: &str) {
-        let handler = self.inner.lock().unwrap().remove(token);
-        let (_, h, _) = handler.unwrap();
-        h.cancel().await;
     }
 
     pub async fn execute(&mut self, info: ExecuteInfo) -> OpResult {
         let handler = self.inner.lock().unwrap().remove(&info.get_token());
         match handler {
             None => OpResult::DeviceOffline,
-            Some((mut s, h, t)) => {
+            Some((mut s, h)) => {
                 s.write(&info.get_command().as_bytes()).await.unwrap();
-                self.inner.lock().unwrap().insert(info.get_token(), (s, h, t));
+                self.inner.lock().unwrap().insert(info.get_token(), (s, h));
                 OpResult::Ok
             }
         }
@@ -92,37 +85,25 @@ impl TaskHandler {
         let handle = async_std::task::spawn(async move {
             loop {
                 let fs = tasks.get_all_future().await;
+                if fs.is_empty() { break; }
                 futures::future::join_all(fs).await;
             }
         });
 
-        let mut _handler = self.clone();
         let token = token.to_string();
         let token_clone = token.clone();
         let mut _socket = socket.clone();
 
-        let f = async move {
-            let mut buf = [];
-            match _socket.read(&mut buf).await {
-                Ok(_) => (),
-                Err(_) => ()
-            }
-            _handler.cancel(&token).await;
-            println!("task cancel");
-        };
-
-        let task_guard = async_std::task::spawn(async move { f.await; });
-
-        self.insert(&token_clone, socket, handle, task_guard);
+        self.insert(&token_clone, socket, handle);
     }
 
     pub async fn reload(&mut self, token: &str) -> OpResult {
         let handler = self.inner.lock().unwrap().remove(token);
         match handler {
             None => OpResult::DeviceOffline,
-            Some((s, h, t)) => {
-                t.cancel().await;
+            Some((s, h)) => {
                 h.cancel().await;
+                println!("reload done");
                 self.tasks_run(token, s);
                 OpResult::Ok
             }

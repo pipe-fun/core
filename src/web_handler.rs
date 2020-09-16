@@ -45,6 +45,7 @@ impl WebHandler {
                         Err(_) => continue,
                     };
 
+                    println!("{:?}", op);
                     WebHandler::deal(&mut socket.clone(), &mut handler, op).await;
                 }
             }
@@ -61,27 +62,27 @@ impl WebHandler {
                         let buf = serde_json::to_string(&OpResult::Ok)
                             .unwrap();
                         socket.write(buf.as_bytes()).await.unwrap();
-                    },
+                    }
                     OpResult::DeviceOffline => {
                         let buf = serde_json::to_string(&OpResult::DeviceOffline)
                             .unwrap();
                         socket.write(buf.as_bytes()).await.unwrap();
-                    },
+                    }
                     OpResult::CoreOffline => (),
                 }
-            },
+            }
             Operation::Reload(token) => {
                 match handler.reload(&token).await {
                     OpResult::Ok => {
                         let buf = serde_json::to_string(&OpResult::Ok)
                             .unwrap();
                         socket.write(buf.as_bytes()).await.unwrap();
-                    },
+                    }
                     OpResult::DeviceOffline => {
                         let buf = serde_json::to_string(&OpResult::DeviceOffline)
                             .unwrap();
                         socket.write(buf.as_bytes()).await.unwrap();
-                    },
+                    }
                     OpResult::CoreOffline => ()
                 }
             }
