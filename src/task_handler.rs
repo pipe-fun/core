@@ -66,9 +66,13 @@ impl TaskHandler {
         match handler {
             None => OpResult::DeviceOffline,
             Some((mut s, h)) => {
-                s.write(&info.get_command().as_bytes()).await.unwrap();
-                self.inner.lock().unwrap().insert(info.get_token(), (s, h));
-                OpResult::Ok
+                match s.write(&info.get_command().as_bytes()).await {
+                    Err(_) => OpResult::DeviceOffline,
+                    Ok(_) => {
+                        self.inner.lock().unwrap().insert(info.get_token(), (s, h));
+                        OpResult::Ok
+                    }
+                }
             }
         }
     }
