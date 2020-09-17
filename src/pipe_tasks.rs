@@ -27,11 +27,6 @@ impl PipeTasks {
         }
     }
 
-    pub fn _refresh(&mut self) {
-        let tasks = OriginalTask::get_all_task_by_token(&self.device_token);
-        self.tasks = tasks;
-    }
-
     pub fn is_empty(&self) -> bool {
         self.tasks.is_empty()
     }
@@ -55,9 +50,18 @@ impl PipeTasks {
                 println!("task_name: {}, command: {}, execute_time: {}"
                          , name, command, execute_time.time());
                 async_std::task::sleep(delay).await;
-                socket.write(command.as_bytes()).await.unwrap();
-                OriginalTask::update_success(ot);
-                println!("task {} has been executed", name);
+
+                match socket.write(command.as_bytes()).await {
+                    Ok(_) => {
+                        OriginalTask::update_success(ot);
+                        println!("task {} has been executed", name);
+                    }
+                    Err(e) => {
+                        OriginalTask::update_failed(ot);
+                        println!("execute error: {:?}", e.to_string());
+                    }
+                }
+
             };
 
             new_deque.push_back(t);

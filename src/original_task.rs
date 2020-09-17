@@ -75,4 +75,10 @@ impl OriginalTask {
         let url = format!("/task/update/{}", ot.id);
         request::put(&url, &ot)
     }
+
+    pub fn update_failed(mut ot: OriginalTask) {
+        ot.failed_count += 1;
+        let url = format!("/task/update/{}", ot.id);
+        request::put(&url, &ot)
+    }
 }
