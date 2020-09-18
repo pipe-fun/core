@@ -40,7 +40,10 @@ impl TaskHandler {
 
             if self.contains(token) {
                 let mut s = self.get_socket(token).unwrap();
-                s.close().await.unwrap();
+                match s.close().await {
+                    Ok(_) => (),
+                    Err(e) => println!("{} close err {}", token, e.to_string()),
+                }
             }
 
             self.tasks_run(token, socket);
