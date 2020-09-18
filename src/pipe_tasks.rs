@@ -27,8 +27,8 @@ impl PipeTasks {
         }
     }
 
-    pub fn _is_empty(&self) -> bool {
-        self.tasks.is_empty()
+    pub fn is_invalid(&self) -> bool {
+        self.owner.is_empty()
     }
 
     pub async fn get_all_future(&mut self) -> Vec<impl Future<Output = ()>> {
