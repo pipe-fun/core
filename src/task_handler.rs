@@ -93,7 +93,6 @@ impl TaskHandler {
     pub fn tasks_run(&mut self, token: &str, socket: TcpStream) {
         let _socket = socket.clone();
         let mut tasks = PipeTasks::new(token, _socket);
-        if tasks.is_empty() { return; }
 
         let handle = async_std::task::spawn(async move {
             loop {
