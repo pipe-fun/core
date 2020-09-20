@@ -8,6 +8,9 @@ use std::net::{TcpListener, ToSocketAddrs};
 use async_std::net::TcpStream;
 use net2::TcpStreamExt;
 use std::time::Duration;
+use std::env;
+use dotenv::dotenv;
+use std::str::FromStr;
 use crate::pipe_tasks::PipeTasks;
 
 pub struct TaskHandler {
@@ -22,14 +25,18 @@ impl TaskHandler {
     }
 
     pub async fn start<A: ToSocketAddrs>(&mut self, addrs: A) -> std::io::Result<()> {
-        let listener = TcpListener::bind(addrs)?;
+        dotenv().ok();
+
         let mut buf = [0; 1024];
+        let listener = TcpListener::bind(addrs)?;
+        let keep_alive = env::var("CORE_TCP_KEEP_ALIVE").expect("CORE_TCP_KEEP_ALIVE is not set in .env file");
+        let keep_alive = u64::from_str(&keep_alive).unwrap_or_else(|_| 60);
 
         while let Some(stream) = listener.incoming().next() {
             let socket = stream?;
-            socket.set_keepalive(Some(Duration::from_secs(1))).unwrap();
+            socket.set_keepalive(Some(Duration::from_secs(keep_alive))).unwrap();
 
-            let mut socket: async_std::net::TcpStream = socket.into();
+            let mut socket: TcpStream = socket.into();
             let len = socket.read(&mut buf).await?;
             if len == 0 { continue; }
 
